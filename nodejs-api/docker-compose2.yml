@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo
+    restart: always
+    env_file: .env
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=$MONGODB_USER
+      - MONGO_INITDB_ROOT_PASSWORD=$MONGODB_PASSWORD
+    ports:
+      - "27017:27017"
+    networks:
+      - mynetwork
+    volumes:
+      - db:/data/db
+
+  mongo-express:
+    container_name: mongo-express
+    image: mongo-express
+    restart: always
+    env_file: .env
+    depends_on:
+      - mongodb
+    networks:
+      - mynetwork
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=$MONGODB_USER
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=$MONGODB_PASSWORD
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+      - ME_CONFIG_BASICAUTH_USERNAME=$MONGODB_USER
+      - ME_CONFIG_BASICAUTH_PASSWORD=$MONGODB_PASSWORD
+    ports:
+      - "8081:8081"
+
+  myapp:
+    container_name: myapp
+    depends_on:
+      - mongodb
+    build: .
+    restart: always
+    env_file: .env
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=mongodb
+      - DB_USER=$MONGODB_USER
+      - DB_PASSWORD=$MONGODB_PASSWORD
+      - DB_NAME=$DB_NAME
+      - DB_PORT=$DB_PORT
+    networks:
+      - mynetwork
+    stdin_open: true
+    tty: true
+
+networks:
+  mynetwork:
+    driver: bridge
+
+volumes:
+  db:
